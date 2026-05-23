@@ -41,14 +41,42 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Install and configure Claude Code Router
+        run: |
+          npm install -g ccr-next
+          mkdir -p ~/.claude-code-router
+          cat << 'CEOF' > ~/.claude-code-router/config.json
+          {
+            "Providers": [
+              {
+                "name": "deepseek",
+                "api_base_url": "https://api.deepseek.com/chat/completions",
+                "api_key": "${{ secrets.DEEPSEEK_API_KEY }}",
+                "models": ["deepseek-chat", "deepseek-reasoner"]
+              }
+            ],
+            "Router": {
+              "default": "deepseek,deepseek-chat"
+            }
+          }
+          CEOF
+
+      - name: Start Claude Code Router
+        run: |
+          nohup ccr start &>/tmp/ccr.log &
+          echo "Waiting for ccr..."
+          for i in $(seq 1 30); do
+            if curl -s http://localhost:3456 > /dev/null 2>&1; then
+              echo "ccr ready"
+              break
+            fi
+            sleep 1
+          done
+
       - name: Run Claude Code
         env:
-          ANTHROPIC_BASE_URL: https://api.deepseek.com/anthropic
-          ANTHROPIC_AUTH_TOKEN: ${{ secrets.DEEPSEEK_API_KEY }}
-          ANTHROPIC_DEFAULT_OPUS_MODEL: deepseek-v4-pro
-          ANTHROPIC_DEFAULT_SONNET_MODEL: deepseek-v4-pro
-          ANTHROPIC_DEFAULT_HAIKU_MODEL: deepseek-v4-flash
-          CLAUDE_CODE_SUBAGENT_MODEL: deepseek-v4-flash
+          ANTHROPIC_BASE_URL: http://localhost:3456
+          ANTHROPIC_AUTH_TOKEN: dummy
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
