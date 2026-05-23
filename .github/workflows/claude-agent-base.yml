@@ -53,30 +53,19 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
-      - name: Install and configure Claude Code Router
+      - name: Configure Claude Code for DeepSeek
         run: |
-          npm install -g ccr-next
-          mkdir -p ~/.claude-code-router
-          cat <<'EOF' > ~/.claude-code-router/config.json
+          mkdir -p ~/.config/claude-deepseek
+          cat <<'EOF' > ~/.config/claude-deepseek/settings.json
           {
-            "Providers": [
-              {
-                "name": "deepseek",
-                "api_base_url": "https://api.deepseek.com/chat/completions",
-                "api_key": "${{ secrets.DEEPSEEK_API_KEY }}",
-                "models": ["deepseek-chat", "deepseek-reasoner"],
-                "transformer": {
-                  "use": ["deepseek"],
-                  "deepseek-chat": {
-                    "use": ["tooluse"]
-                  }
-                }
-              }
-            ],
-            "Router": {
-              "default": "deepseek,deepseek-chat",
-              "background": "deepseek,deepseek-chat",
-              "think": "deepseek,deepseek-reasoner"
+            "env": {
+              "CLAUDE_CODE_USE_VERTEX": "",
+              "ANTHROPIC_VERTEX_PROJECT_ID": "",
+              "CLOUD_ML_REGION": "",
+              "ANTHROPIC_DEFAULT_OPUS_MODEL": "",
+              "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic",
+              "ANTHROPIC_AUTH_TOKEN": "${{ secrets.DEEPSEEK_API_KEY }}",
+              "ANTHROPIC_API_KEY": "${{ secrets.DEEPSEEK_API_KEY }}"
             }
           }
           EOF
@@ -122,33 +111,21 @@ jobs:
           ${{ github.event.comment.body || '' }}
           EOF
 
-      - name: Start ccr and run Claude Code
+      - name: Run Claude Code
         env:
-          ANTHROPIC_BASE_URL: http://localhost:3456
-          ANTHROPIC_AUTH_TOKEN: dummy
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -eo pipefail
-          ccr start &>/tmp/ccr.log &
-          echo "Waiting for ccr..."
-          for i in $(seq 1 30); do
-            if curl -s http://localhost:3456 > /dev/null 2>&1; then
-              echo "ccr ready"
-              break
-            fi
-            sleep 1
-          done
-
-          ccr code "$(cat claude_prompt.txt)" \
+          claude --bare \
+            --settings ~/.config/claude-deepseek/settings.json \
+            --model sonnet \
+            -p "$(cat claude_prompt.txt)" \
             --output-format text \
             --dangerously-skip-permissions \
             --no-session-persistence \
             --max-turns 15 \
             --allowed-tools "Read,Write,Edit,Bash(git:*),Bash(gh:*)" | tee claude_output.txt
-
-          echo "=== ccr logs ==="
-          cat /tmp/ccr.log
 
       - name: Detect changes
         id: changes
