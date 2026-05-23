@@ -61,9 +61,14 @@ jobs:
           }
           CEOF
 
-      - name: Start Claude Code Router
+      - name: Start ccr and run Claude Code
+        env:
+          ANTHROPIC_BASE_URL: http://localhost:3456
+          ANTHROPIC_AUTH_TOKEN: dummy
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          nohup ccr start &>/tmp/ccr.log &
+          ccr start &>/tmp/ccr.log &
           echo "Waiting for ccr..."
           for i in $(seq 1 30); do
             if curl -s http://localhost:3456 > /dev/null 2>&1; then
@@ -73,16 +78,12 @@ jobs:
             sleep 1
           done
 
-      - name: Run Claude Code
-        env:
-          ANTHROPIC_BASE_URL: http://localhost:3456
-          ANTHROPIC_AUTH_TOKEN: dummy
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
           claude -p "${{ github.event.comment.body || github.event.pull_request.body || github.event.issue.body }}" \
             --output-format text \
             --dangerously-skip-permissions \
             --no-session-persistence \
             --max-turns 15 \
             --allowed-tools "Read,Write,Edit,Bash(git:*),Bash(gh:*)"
+
+          echo "=== ccr logs ==="
+          cat /tmp/ccr.log
