@@ -1,5 +1,5 @@
-name: Frontend Agent Task
-description: Create a task for the frontend Claude agent.
+name: Frontend OpenCode Task
+description: Create a frontend task for the OpenCode frontend agent.
 title: "[frontend] "
 labels:
   - frontend
@@ -7,44 +7,43 @@ body:
   - type: markdown
     attributes:
       value: |
-        Add `@claude` in the request body so the Frontend Agent starts automatically.
+        Put `/opencode` in the request body so OpenCode can start automatically on issue creation.
   - type: textarea
     id: goal
     attributes:
       label: Goal
-      description: Describe the user-facing change to implement.
-      placeholder: Add a dashboard header with filters and summary cards.
+      description: Describe the frontend change to implement.
+      placeholder: Add a simple dashboard header component.
     validations:
       required: true
   - type: textarea
     id: scope
     attributes:
       label: Allowed Scope
-      description: List the frontend files or directories this agent may touch.
-      placeholder: components/dashboard, app/dashboard, styles/dashboard.css
+      description: List the files or directories the frontend agent may edit.
+      placeholder: app/**, components/**, styles/**
     validations:
       required: true
   - type: textarea
     id: acceptance
     attributes:
       label: Acceptance Criteria
-      description: Define what must be true for this task to be done.
+      description: Define what must be true when the task is complete.
       placeholder: |
-        - Header renders on desktop and mobile
-        - Filters update visible data
-        - Existing layout remains intact
+        - UI renders without errors
+        - Layout works on desktop and mobile
     validations:
       required: true
   - type: textarea
     id: request
     attributes:
       label: Agent Request
-      description: Put the exact request for Claude here.
+      description: The command or request OpenCode should follow.
       value: |
-        @claude
+        /opencode
 
         Implement the frontend change described above.
-        Stay within the allowed scope.
+        Stay within the Allowed Scope.
         If the task is blocked or outside frontend scope, explain why and do not make unrelated changes.
     validations:
       required: true

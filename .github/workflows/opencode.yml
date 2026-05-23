@@ -1,0 +1,49 @@
+name: OpenCode
+
+on:
+  issues:
+    types: [opened, reopened, edited, labeled]
+  issue_comment:
+    types: [created]
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  opencode:
+    if: |
+      (
+        github.event_name == 'issues' &&
+        (
+          contains(github.event.issue.body, '/opencode') ||
+          contains(github.event.issue.body, '/oc')
+        )
+      ) ||
+      (
+        github.event_name == 'issue_comment' &&
+        (
+          contains(github.event.comment.body, '/opencode') ||
+          contains(github.event.comment.body, '/oc')
+        )
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Run OpenCode
+        uses: anomalyco/opencode/github@latest
+        with:
+          model: deepseek/deepseek-chat
+          agent: ${{ (contains(github.event.issue.labels.*.name, 'frontend') || startsWith(github.event.issue.title, '[frontend]')) && 'frontend' || (contains(github.event.issue.labels.*.name, 'backend') || startsWith(github.event.issue.title, '[backend]')) && 'backend' || (contains(github.event.issue.labels.*.name, 'test') || startsWith(github.event.issue.title, '[test]')) && 'test' || 'build' }}
+          use_github_token: true
+          prompt: ${{ github.event_name == 'issues' && 'Read the issue body as the task request. Respect the selected agent scope and the Allowed Scope section from the issue. If the task is actionable, implement it in a new branch and open a pull request. If it is unclear or out of scope, explain why without making unrelated changes.' || '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}

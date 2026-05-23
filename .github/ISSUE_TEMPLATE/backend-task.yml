@@ -1,5 +1,5 @@
-name: Backend Agent Task
-description: Create a task for the backend Claude agent.
+name: Backend OpenCode Task
+description: Create a backend task for the OpenCode backend agent.
 title: "[backend] "
 labels:
   - backend
@@ -7,44 +7,43 @@ body:
   - type: markdown
     attributes:
       value: |
-        Add `@claude` in the request body so the Backend Agent starts automatically.
+        Put `/opencode` in the request body so OpenCode can start automatically on issue creation.
   - type: textarea
     id: goal
     attributes:
       label: Goal
-      description: Describe the server-side change to implement.
-      placeholder: Add an API endpoint for task summaries grouped by status.
+      description: Describe the backend change to implement.
+      placeholder: Add a hello world script under ./backend.
     validations:
       required: true
   - type: textarea
     id: scope
     attributes:
       label: Allowed Scope
-      description: List the backend files or directories this agent may touch.
-      placeholder: api/tasks, server/tasks, db/migrations
+      description: List the files or directories the backend agent may edit.
+      placeholder: backend/**, server/**, api/**
     validations:
       required: true
   - type: textarea
     id: acceptance
     attributes:
       label: Acceptance Criteria
-      description: Define the expected behavior and edge cases.
+      description: Define what must be true when the task is complete.
       placeholder: |
-        - Endpoint returns grouped counts
-        - Invalid inputs return 400
-        - Existing endpoints remain unchanged
+        - backend/hello.js exists
+        - Running the script prints hello world
     validations:
       required: true
   - type: textarea
     id: request
     attributes:
       label: Agent Request
-      description: Put the exact request for Claude here.
+      description: The command or request OpenCode should follow.
       value: |
-        @claude
+        /opencode
 
         Implement the backend change described above.
-        Stay within the allowed scope.
+        Stay within the Allowed Scope.
         If the task is blocked or outside backend scope, explain why and do not make unrelated changes.
     validations:
       required: true

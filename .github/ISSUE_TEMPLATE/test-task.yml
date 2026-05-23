@@ -1,5 +1,5 @@
-name: Test Agent Task
-description: Create a task for the test Claude agent.
+name: Test OpenCode Task
+description: Create a test task for the OpenCode test agent.
 title: "[test] "
 labels:
   - test
@@ -7,44 +7,43 @@ body:
   - type: markdown
     attributes:
       value: |
-        Add `@claude` in the request body so the Test Agent starts automatically.
+        Put `/opencode` in the request body so OpenCode can start automatically on issue creation.
   - type: textarea
     id: goal
     attributes:
       label: Goal
-      description: Describe the automated test work to implement.
-      placeholder: Add integration tests for task summary API and empty-state UI.
+      description: Describe the tests or verification changes to implement.
+      placeholder: Add tests for the backend hello world script.
     validations:
       required: true
   - type: textarea
     id: scope
     attributes:
       label: Allowed Scope
-      description: List the test files or directories this agent may touch.
-      placeholder: tests/api, e2e/tasks, fixtures/tasks
+      description: List the files or directories the test agent may edit.
+      placeholder: tests/**, test/**, fixtures/**
     validations:
       required: true
   - type: textarea
     id: acceptance
     attributes:
       label: Acceptance Criteria
-      description: Define which behaviors the tests must verify.
+      description: Define the required coverage or behavior.
       placeholder: |
-        - Happy path covered
-        - Empty-state covered
-        - Failure path covered
+        - Includes a runnable automated test
+        - Covers the expected output
     validations:
       required: true
   - type: textarea
     id: request
     attributes:
       label: Agent Request
-      description: Put the exact request for Claude here.
+      description: The command or request OpenCode should follow.
       value: |
-        @claude
+        /opencode
 
-        Implement the test changes described above.
-        Stay within the allowed scope.
+        Implement the test change described above.
+        Stay within the Allowed Scope.
         If the task is blocked or outside test scope, explain why and do not make unrelated changes.
     validations:
       required: true

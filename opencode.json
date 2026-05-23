@@ -1,0 +1,92 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "deepseek/deepseek-chat",
+  "default_agent": "build",
+  "share": "disabled",
+  "provider": {
+    "deepseek": {
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "name": "DeepSeek",
+        "baseURL": "https://api.deepseek.com/v1",
+        "apiKey": "{env:DEEPSEEK_API_KEY}"
+      },
+      "models": {
+        "deepseek-chat": {
+          "name": "DeepSeek Chat"
+        },
+        "deepseek-reasoner": {
+          "name": "DeepSeek Reasoner"
+        }
+      }
+    }
+  },
+  "permission": {
+    "bash": {
+      "*": "allow",
+      "rm *": "deny"
+    }
+  },
+  "instructions": [
+    "AGENTS.md"
+  ],
+  "agent": {
+    "build": {
+      "description": "General-purpose implementation agent for repository tasks.",
+      "mode": "primary"
+    },
+    "frontend": {
+      "description": "Implements frontend changes within approved UI-facing paths.",
+      "mode": "primary",
+      "prompt": "You are the frontend implementation agent. Focus on UI, styling, components, pages, and client behavior. Respect the Allowed Scope written in the GitHub issue. If the task is mostly backend or test work, explain that and do not make unrelated changes.",
+      "permission": {
+        "edit": {
+          "*": "deny",
+          "app/**": "allow",
+          "components/**": "allow",
+          "pages/**": "allow",
+          "public/**": "allow",
+          "src/**": "allow",
+          "styles/**": "allow",
+          "ui/**": "allow",
+          "web/**": "allow"
+        }
+      }
+    },
+    "backend": {
+      "description": "Implements backend changes within approved server-side paths.",
+      "mode": "primary",
+      "prompt": "You are the backend implementation agent. Focus on APIs, server logic, services, and data access. Respect the Allowed Scope written in the GitHub issue. If the task is mostly frontend or test work, explain that and do not make unrelated changes.",
+      "permission": {
+        "edit": {
+          "*": "deny",
+          "api/**": "allow",
+          "backend/**": "allow",
+          "db/**": "allow",
+          "migrations/**": "allow",
+          "server/**": "allow",
+          "services/**": "allow",
+          "src/**": "allow"
+        }
+      }
+    },
+    "test": {
+      "description": "Implements automated tests and test fixtures within approved test paths.",
+      "mode": "primary",
+      "prompt": "You are the test implementation agent. Focus on automated tests, mocks, fixtures, and verification coverage. Respect the Allowed Scope written in the GitHub issue. Avoid broad product changes unless a tiny supporting code change is required for testability.",
+      "permission": {
+        "edit": {
+          "*": "deny",
+          "e2e/**": "allow",
+          "fixtures/**": "allow",
+          "mocks/**": "allow",
+          "spec/**": "allow",
+          "src/**/*.spec.*": "allow",
+          "src/**/*.test.*": "allow",
+          "test/**": "allow",
+          "tests/**": "allow"
+        }
+      }
+    }
+  }
+}
