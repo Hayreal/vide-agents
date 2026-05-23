@@ -45,7 +45,7 @@ jobs:
           agent: ${{ (contains(github.event.issue.labels.*.name, 'frontend') || startsWith(github.event.issue.title, '[frontend]')) && 'frontend' || (contains(github.event.issue.labels.*.name, 'backend') || startsWith(github.event.issue.title, '[backend]')) && 'backend' || (contains(github.event.issue.labels.*.name, 'test') || startsWith(github.event.issue.title, '[test]')) && 'test' || 'build' }}
           use_github_token: true
           mentions: true
-          share: auto
+          share: true
           prompt: ${{ github.event_name == 'issues' && 'Use the issue body as the task request. Respect the selected agent scope and the Allowed Scope section from the issue. If the task is actionable, implement it in a new branch and open a pull request. If it is unclear or out of scope, explain why without making unrelated changes.' || 'Use the original issue body as the source of truth for the task. Treat the latest human comment only as a retrigger request, not as a replacement task description. Ignore prior bot comments and summaries. Respect the selected agent scope and the Allowed Scope section from the issue. If the task is actionable, implement it in a new branch and open a pull request.' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
