@@ -2,7 +2,7 @@
   "$schema": "https://opencode.ai/config.json",
   "model": "deepseek/deepseek-chat",
   "default_agent": "build",
-  "share": "disabled",
+  "share": "auto",
   "provider": {
     "deepseek": {
       "npm": "@ai-sdk/openai-compatible",
