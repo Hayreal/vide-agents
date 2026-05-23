@@ -9,7 +9,7 @@ on:
     types: [opened]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
   issues: write
 
@@ -49,9 +49,12 @@ jobs:
           ANTHROPIC_DEFAULT_SONNET_MODEL: deepseek-v4-pro
           ANTHROPIC_DEFAULT_HAIKU_MODEL: deepseek-v4-flash
           CLAUDE_CODE_SUBAGENT_MODEL: deepseek-v4-flash
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           claude -p "${{ github.event.comment.body || github.event.pull_request.body || github.event.issue.body }}" \
             --output-format text \
             --dangerously-skip-permissions \
             --no-session-persistence \
-            --max-turns 15
+            --max-turns 15 \
+            --allowed-tools "Read,Write,Edit,Bash(git:*),Bash(gh:*)"
