@@ -53,23 +53,6 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
-      - name: Configure Claude Code for DeepSeek
-        run: |
-          mkdir -p ~/.config/claude-deepseek
-          cat <<'EOF' > ~/.config/claude-deepseek/settings.json
-          {
-            "env": {
-              "CLAUDE_CODE_USE_VERTEX": "",
-              "ANTHROPIC_VERTEX_PROJECT_ID": "",
-              "CLOUD_ML_REGION": "",
-              "ANTHROPIC_DEFAULT_OPUS_MODEL": "",
-              "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic",
-              "ANTHROPIC_AUTH_TOKEN": "${{ secrets.DEEPSEEK_API_KEY }}",
-              "ANTHROPIC_API_KEY": "${{ secrets.DEEPSEEK_API_KEY }}"
-            }
-          }
-          EOF
-
       - name: Build Claude prompt
         shell: bash
         run: |
@@ -115,10 +98,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_BASE_URL: https://api.deepseek.com/anthropic
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.DEEPSEEK_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
           set -eo pipefail
           claude --bare \
-            --settings ~/.config/claude-deepseek/settings.json \
             --model sonnet \
             -p "$(cat claude_prompt.txt)" \
             --output-format text \
