@@ -1,0 +1,50 @@
+name: Backend Agent Task
+description: Create a task for the backend Claude agent.
+title: "[backend] "
+labels:
+  - backend
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Add `@claude` in the request body so the Backend Agent starts automatically.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: Describe the server-side change to implement.
+      placeholder: Add an API endpoint for task summaries grouped by status.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Allowed Scope
+      description: List the backend files or directories this agent may touch.
+      placeholder: api/tasks, server/tasks, db/migrations
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: Define the expected behavior and edge cases.
+      placeholder: |
+        - Endpoint returns grouped counts
+        - Invalid inputs return 400
+        - Existing endpoints remain unchanged
+    validations:
+      required: true
+  - type: textarea
+    id: request
+    attributes:
+      label: Agent Request
+      description: Put the exact request for Claude here.
+      value: |
+        @claude
+
+        Implement the backend change described above.
+        Stay within the allowed scope.
+        If the task is blocked or outside backend scope, explain why and do not make unrelated changes.
+    validations:
+      required: true

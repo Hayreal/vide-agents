@@ -1,0 +1,50 @@
+name: Test Agent Task
+description: Create a task for the test Claude agent.
+title: "[test] "
+labels:
+  - test
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Add `@claude` in the request body so the Test Agent starts automatically.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: Describe the automated test work to implement.
+      placeholder: Add integration tests for task summary API and empty-state UI.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Allowed Scope
+      description: List the test files or directories this agent may touch.
+      placeholder: tests/api, e2e/tasks, fixtures/tasks
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: Define which behaviors the tests must verify.
+      placeholder: |
+        - Happy path covered
+        - Empty-state covered
+        - Failure path covered
+    validations:
+      required: true
+  - type: textarea
+    id: request
+    attributes:
+      label: Agent Request
+      description: Put the exact request for Claude here.
+      value: |
+        @claude
+
+        Implement the test changes described above.
+        Stay within the allowed scope.
+        If the task is blocked or outside test scope, explain why and do not make unrelated changes.
+    validations:
+      required: true

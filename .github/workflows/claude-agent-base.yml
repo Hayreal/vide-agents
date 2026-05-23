@@ -1,12 +1,23 @@
-name: Claude Code
+name: Claude Agent Base
 
 on:
-  issue_comment:
-    types: [created]
-  pull_request:
-    types: [opened, synchronize]
-  issues:
-    types: [opened]
+  workflow_call:
+    inputs:
+      agent_name:
+        required: true
+        type: string
+      agent_label:
+        required: true
+        type: string
+      branch_prefix:
+        required: true
+        type: string
+      scope_summary:
+        required: true
+        type: string
+      scope_rules:
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -14,17 +25,13 @@ permissions:
   issues: write
 
 jobs:
-  claude:
-    if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request') ||
-      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+  claude-agent:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     concurrency:
-      group: claude-${{ github.event.pull_request.number || github.event.issue.number || github.ref || github.run_id }}
+      group: ${{ inputs.branch_prefix }}-${{ github.event.issue.number || github.run_id }}
       cancel-in-progress: true
 
     steps:
@@ -50,7 +57,7 @@ jobs:
         run: |
           npm install -g ccr-next
           mkdir -p ~/.claude-code-router
-          cat << 'CEOF' > ~/.claude-code-router/config.json
+          cat <<'EOF' > ~/.claude-code-router/config.json
           {
             "Providers": [
               {
@@ -64,45 +71,48 @@ jobs:
               "default": "deepseek,deepseek-chat"
             }
           }
-          CEOF
+          EOF
 
       - name: Build Claude prompt
-        id: prompt
         shell: bash
         run: |
-          cat > claude_prompt.txt <<'EOF'
+          cat > claude_prompt.txt <<EOF
           You are running inside GitHub Actions on a checked-out repository.
 
+          Role:
+          - You are the ${{ inputs.agent_name }} implementation agent.
+          - Only work on tasks that match the ${{ inputs.agent_label }} issue label.
+
           Goal:
-          - If this request is an issue asking for implementation work, make the requested code changes directly in the repository.
-          - Keep changes minimal and aligned with the existing style.
-          - Do not stop at analysis if a reasonable implementation is possible.
-          - If the request is unclear or there is nothing to change safely, leave the working tree unchanged and explain that in your final response.
+          - Implement the issue directly in the repository when a reasonable change is possible.
+          - Keep the change small, targeted, and aligned with the existing style.
+          - Do not stop at analysis if you can safely implement the request.
+
+          Scope:
+          - ${{ inputs.scope_summary }}
+
+          Scope guardrails:
+          ${{ inputs.scope_rules }}
 
           Output rules:
           - Print a concise final summary of what you changed.
+          - If the request is outside your scope or unclear, leave the working tree unchanged and say so.
           - Do not ask for interactive confirmation.
 
           Event payload:
-          EOF
+          event_name: ${{ github.event_name }}
+          repository: ${{ github.repository }}
+          actor: ${{ github.actor }}
 
-          {
-            echo "event_name: ${{ github.event_name }}"
-            echo "repository: ${{ github.repository }}"
-            echo "actor: ${{ github.actor }}"
-            echo "ref: ${{ github.ref }}"
-            echo
-            echo "issue_title: ${{ github.event.issue.title || '' }}"
-            echo "issue_body:"
-            printf '%s\n' "${{ github.event.issue.body || '' }}"
-            echo
-            echo "comment_body:"
-            printf '%s\n' "${{ github.event.comment.body || '' }}"
-            echo
-            echo "pull_request_title: ${{ github.event.pull_request.title || '' }}"
-            echo "pull_request_body:"
-            printf '%s\n' "${{ github.event.pull_request.body || '' }}"
-          } >> claude_prompt.txt
+          issue_number: ${{ github.event.issue.number }}
+          issue_title: ${{ github.event.issue.title || '' }}
+          issue_labels: ${{ join(github.event.issue.labels.*.name, ', ') }}
+          issue_body:
+          ${{ github.event.issue.body || '' }}
+
+          comment_body:
+          ${{ github.event.comment.body || '' }}
+          EOF
 
       - name: Start ccr and run Claude Code
         env:
@@ -143,32 +153,35 @@ jobs:
 
       - name: Create branch, commit, and push
         id: push
-        if: steps.changes.outputs.has_changes == 'true' && github.event_name != 'pull_request'
+        if: steps.changes.outputs.has_changes == 'true'
         shell: bash
         run: |
-          issue_number="${{ github.event.issue.number || github.event.pull_request.number }}"
+          issue_number="${{ github.event.issue.number }}"
           short_sha="$(git rev-parse --short HEAD)"
-          branch="claude/issue-${issue_number}-${short_sha}"
+          branch="${{ inputs.branch_prefix }}/issue-${issue_number}-${short_sha}"
 
           git checkout -b "$branch"
           git add -A
-          git commit -m "claude: address issue #${issue_number}"
+          git commit -m "${{ inputs.agent_name }}: address issue #${issue_number}"
           git push origin "$branch"
 
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
 
       - name: Create PR
         id: pr
-        if: steps.changes.outputs.has_changes == 'true' && github.event_name != 'pull_request'
+        if: steps.changes.outputs.has_changes == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           issue_number="${{ github.event.issue.number }}"
           {
-            echo "Automated changes generated by Claude Code."
+            echo "Automated changes generated by the ${{ inputs.agent_name }} agent."
             echo
             echo "Closes #${issue_number}"
+            echo
+            echo "Agent label: ${{ inputs.agent_label }}"
+            echo "Scope: ${{ inputs.scope_summary }}"
             echo
             echo "Summary:"
             sed -n '1,120p' claude_output.txt
@@ -177,18 +190,18 @@ jobs:
           pr_url="$(gh pr create \
             --base "${{ github.event.repository.default_branch }}" \
             --head "${{ steps.push.outputs.branch }}" \
-            --title "Claude: resolve issue #${issue_number}" \
+            --title "${{ inputs.agent_name }}: resolve issue #${issue_number}" \
             --body-file pr_body.md)"
           echo "url=$pr_url" >> "$GITHUB_OUTPUT"
 
       - name: Comment on issue with PR link
-        if: steps.changes.outputs.has_changes == 'true' && github.event_name != 'pull_request'
+        if: steps.changes.outputs.has_changes == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           {
-            echo "Claude created a pull request for this issue:"
+            echo "${{ inputs.agent_name }} created a pull request for this issue:"
             echo
             echo "${{ steps.pr.outputs.url }}"
             echo
@@ -199,13 +212,13 @@ jobs:
           gh issue comment "${{ github.event.issue.number }}" --body-file issue_comment.md
 
       - name: Comment when no changes were made
-        if: steps.changes.outputs.has_changes != 'true' && github.event_name != 'pull_request'
+        if: steps.changes.outputs.has_changes != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           {
-            echo "Claude finished processing this issue but did not produce repository changes."
+            echo "${{ inputs.agent_name }} finished processing this issue but did not produce repository changes."
             echo
             echo "Summary:"
             sed -n '1,120p' claude_output.txt
