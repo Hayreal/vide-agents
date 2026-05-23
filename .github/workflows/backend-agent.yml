@@ -14,7 +14,10 @@ permissions:
 jobs:
   backend:
     if: |
-      contains(github.event.issue.labels.*.name, 'backend') &&
+      (
+        contains(github.event.issue.labels.*.name, 'backend') ||
+        startsWith(github.event.issue.title, '[backend]')
+      ) &&
       (
         (github.event_name == 'issues' && contains(github.event.issue.body, '@claude')) ||
         (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
