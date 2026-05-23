@@ -64,11 +64,19 @@ jobs:
                 "name": "deepseek",
                 "api_base_url": "https://api.deepseek.com/chat/completions",
                 "api_key": "${{ secrets.DEEPSEEK_API_KEY }}",
-                "models": ["deepseek-chat", "deepseek-reasoner"]
+                "models": ["deepseek-chat", "deepseek-reasoner"],
+                "transformer": {
+                  "use": ["deepseek"],
+                  "deepseek-chat": {
+                    "use": ["tooluse"]
+                  }
+                }
               }
             ],
             "Router": {
-              "default": "deepseek,deepseek-chat"
+              "default": "deepseek,deepseek-chat",
+              "background": "deepseek,deepseek-chat",
+              "think": "deepseek,deepseek-reasoner"
             }
           }
           EOF
@@ -121,6 +129,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -eo pipefail
           ccr start &>/tmp/ccr.log &
           echo "Waiting for ccr..."
           for i in $(seq 1 30); do
@@ -131,7 +140,7 @@ jobs:
             sleep 1
           done
 
-          claude -p "$(cat claude_prompt.txt)" \
+          ccr code "$(cat claude_prompt.txt)" \
             --output-format text \
             --dangerously-skip-permissions \
             --no-session-persistence \
