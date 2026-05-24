@@ -49,9 +49,8 @@ jobs:
         run: |
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
 
-      - name: Check test dependencies
+      - name: Check issue dependencies
         id: deps
-        if: contains(github.event.issue.labels.*.name, 'test') || startsWith(github.event.issue.title, '[test]')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_BODY: ${{ github.event.issue.body }}
@@ -101,7 +100,7 @@ jobs:
               fh.write(f"should_run={'false' if blocked else 'true'}\n")
               if blocked:
                   lines = [
-                      "Test issue is waiting on dependency issues before OpenCode can run.",
+                      "This issue is waiting on dependency issues before OpenCode can run.",
                       "",
                       f"Current issue: #{issue_number}",
                       "",
@@ -110,12 +109,12 @@ jobs:
                   for item in blocked:
                       lines.append(f"- #{item['number']} {item['title']} ({item['state']})")
                   lines.append("")
-                  lines.append("Close those issues after their changes are merged, then comment `/opencode` again.")
+                  lines.append("Close those dependency issues after their changes are merged, then comment `/opencode` again.")
                   message = "%0A".join(line.replace("%", "%25").replace("\n", "%0A").replace("\r", "%0D") for line in lines)
                   fh.write(f"blocked_message={message}\n")
           PY
 
-      - name: Comment when test dependencies are not ready
+      - name: Comment when dependencies are not ready
         if: steps.deps.outputs.should_run == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -132,7 +131,7 @@ jobs:
           use_github_token: true
           mentions: true
           share: true
-          prompt: ${{ github.event_name == 'issues' && 'Use the issue body as the task request. Respect the selected agent scope and the Allowed Scope section from the issue. For test issues, also respect the Depends On section and do not start until listed dependency issues are complete. If the task is actionable, implement it in a new branch and open a pull request. If it is unclear or out of scope, explain why without making unrelated changes.' || 'Use the original issue body as the source of truth for the task. Treat the latest human comment only as a retrigger request, not as a replacement task description. Ignore prior bot comments and summaries. Respect the selected agent scope, Allowed Scope section, and any Depends On requirements from the issue. If the task is actionable, implement it in a new branch and open a pull request.' }}
+          prompt: ${{ github.event_name == 'issues' && 'Use the issue body as the task request. Respect the selected agent scope, the Allowed Scope section, and the Depends On section from the issue. Do not start implementation until listed dependency issues are complete. If the task is actionable, implement it in a new branch and open a pull request. If it is unclear or out of scope, explain why without making unrelated changes.' || 'Use the original issue body as the source of truth for the task. Treat the latest human comment only as a retrigger request, not as a replacement task description. Ignore prior bot comments and summaries. Respect the selected agent scope, Allowed Scope section, and any Depends On requirements from the issue. Do not start implementation until listed dependency issues are complete. If the task is actionable, implement it in a new branch and open a pull request.' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}

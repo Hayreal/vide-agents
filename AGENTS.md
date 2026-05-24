@@ -17,5 +17,6 @@
 - Use `/opencode` or `/oc` in an issue body or comment to trigger OpenCode
 - Use `[frontend]`, `[backend]`, or `[test]` title prefixes or matching labels to route work to the correct agent
 - Agents must obey the `Allowed Scope` section in the issue and avoid unrelated changes
-- Test issues may declare upstream dependencies in a `Depends On` section using issue references such as `#12` and `#13`
-- Test work should start only after the listed dependency issues are completed and closed
+- Every implementation issue may declare upstream dependencies in a `Depends On` section using issue references such as `#12` and `#13`
+- Requirement analysis and issue decomposition should decide these dependencies before agents start working
+- Issues must not start until every listed dependency issue is completed and closed

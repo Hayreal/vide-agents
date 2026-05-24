@@ -25,6 +25,16 @@ body:
     validations:
       required: true
   - type: textarea
+    id: depends_on
+    attributes:
+      label: Depends On
+      description: List prerequisite issue numbers that must finish before this frontend task starts.
+      placeholder: |
+        #12
+        #13
+    validations:
+      required: false
+  - type: textarea
     id: acceptance
     attributes:
       label: Acceptance Criteria
@@ -43,6 +53,7 @@ body:
         /opencode
 
         Implement the frontend change described above.
+        Wait for every issue listed in Depends On to be completed and closed before starting.
         Stay within the Allowed Scope.
         If the task is blocked or outside frontend scope, explain why and do not make unrelated changes.
     validations:
