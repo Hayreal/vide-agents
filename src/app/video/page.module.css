@@ -1,0 +1,135 @@
+.container {
+  min-height: calc(100vh - var(--header-height));
+  padding: 32px 16px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.title {
+  font-size: 20px;
+  color: var(--accent-primary);
+  text-shadow: 3px 3px 0 #000;
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: 10px;
+  color: var(--text-secondary);
+  letter-spacing: 2px;
+}
+
+.divider {
+  color: var(--border-color);
+  font-size: 10px;
+  letter-spacing: 4px;
+  margin-top: 12px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  border: 4px solid var(--border-color);
+  background: var(--bg-secondary);
+  overflow: hidden;
+  transition: all 0.1s steps(2);
+}
+
+.card:hover {
+  border-color: var(--accent-primary);
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 rgba(233, 69, 96, 0.3);
+}
+
+.cover {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.coverImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+}
+
+.playOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.1s steps(2);
+}
+
+.card:hover .playOverlay {
+  opacity: 1;
+}
+
+.playIcon {
+  font-size: 32px;
+  color: var(--accent-primary);
+  text-shadow: 2px 2px 0 #000;
+}
+
+.duration {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid var(--border-color);
+  font-size: 8px;
+  color: var(--text-primary);
+}
+
+.info {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.videoTitle {
+  font-size: 11px;
+  color: var(--text-primary);
+  letter-spacing: 1px;
+}
+
+.author {
+  font-size: 8px;
+  color: var(--accent-primary);
+}
+
+.description {
+  font-size: 8px;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .title {
+    font-size: 16px;
+  }
+}
