@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+/* Pixel-art theme variables */
+:root {
+  --pixel-bg: #0f0e17;
+  --pixel-bg-secondary: #1a1a2e;
+  --pixel-surface: #16213e;
+  --pixel-accent: #ff6b6b;
+  --pixel-accent-secondary: #ffa500;
+  --pixel-text: #fffffe;
+  --pixel-text-muted: #a7a9be;
+  --pixel-border: #2d3460;
+  --pixel-success: #00c853;
+  --pixel-warning: #ffd600;
+  --pixel-danger: #ff1744;
+  --pixel-info: #448aff;
+
+  /* Tetris piece colors */
+  --piece-i: #00f0f0;
+  --piece-o: #f0f000;
+  --piece-t: #a000f0;
+  --piece-s: #00f000;
+  --piece-z: #f00000;
+  --piece-j: #0000f0;
+  --piece-l: #f0a000;
+
+  --grid-size: 10;
+}
+
+@theme inline {
+  --font-pixel: "Press Start 2P", "Courier New", monospace;
+  --font-mono: "Courier New", "Consolas", monospace;
+}
+
+/* Pixel font via Google Fonts - loaded in layout */
+body {
+  background-color: var(--pixel-bg);
+  color: var(--pixel-text);
+  font-family: "Courier New", "Consolas", monospace;
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
+}
+
+/* Pixel border utility */
+.pixel-border {
+  border: 3px solid var(--pixel-border);
+  box-shadow:
+    inset -3px -3px 0 #0a0e1a,
+    inset 3px 3px 0 #3a4280;
+}
+
+.pixel-border-button {
+  border: 3px solid var(--pixel-border);
+  box-shadow:
+    inset -3px -3px 0 #0a0e1a,
+    inset 3px 3px 0 #3a4280;
+  transition: all 0.05s ease;
+}
+
+.pixel-border-button:active {
+  box-shadow:
+    inset 3px 3px 0 #0a0e1a,
+    inset -3px -3px 0 #3a4280;
+  transform: translate(1px, 1px);
+}
+
+/* Pixel art scanlines */
+.scanlines::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Game board cell styling */
+.cell {
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-sizing: border-box;
+  transition: background-color 0.05s;
+}
+
+.cell.filled {
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  box-shadow:
+    inset -2px -2px 0 rgba(0, 0, 0, 0.3),
+    inset 2px 2px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Ghost piece styling */
+.cell.ghost {
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  background-color: transparent !important;
+}
+
+/* Touch control buttons */
+.touch-btn {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Prevent scroll/zoom on touch when interacting with game */
+.game-container {
+  touch-action: none;
+}
