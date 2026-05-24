@@ -76,6 +76,27 @@ jobs:
           if match:
               dependency_numbers = re.findall(r"#(\d+)", match.group(1))
 
+          mode_match = re.search(r"^### Dependency Mode\s*(.*?)(?=^### |\Z)", issue_body, re.S | re.M)
+          dependency_mode = "closed"
+          if mode_match:
+              normalized = mode_match.group(1).strip().lower()
+              if "merged" in normalized:
+                  dependency_mode = "merged"
+
+          def graphql(payload):
+              req = urllib.request.Request(
+                  "https://api.github.com/graphql",
+                  data=json.dumps(payload).encode("utf-8"),
+                  headers={
+                      "Authorization": f"Bearer {token}",
+                      "Accept": "application/vnd.github+json",
+                      "User-Agent": "github-actions"
+                  },
+                  method="POST",
+              )
+              with urllib.request.urlopen(req) as resp:
+                  return json.load(resp)
+
           blocked = []
           for dep in dependency_numbers:
               req = urllib.request.Request(
@@ -88,14 +109,54 @@ jobs:
               )
               with urllib.request.urlopen(req) as resp:
                   data = json.load(resp)
-              if data.get("state", "").lower() != "closed":
+              issue_closed = data.get("state", "").lower() == "closed"
+              if not issue_closed:
                   blocked.append({
                       "number": dep,
                       "title": data.get("title", ""),
                       "state": data.get("state", "open"),
+                      "reason": "issue is not closed",
                   })
+                  continue
+
+              if dependency_mode == "merged":
+                  owner, name = repo.split("/", 1)
+                  query = {
+                      "query": """
+                        query($owner: String!, $name: String!, $number: Int!) {
+                          repository(owner: $owner, name: $name) {
+                            issue(number: $number) {
+                              closedByPullRequestsReferences(first: 20) {
+                                nodes {
+                                  number
+                                  merged
+                                  state
+                                  url
+                                }
+                              }
+                            }
+                          }
+                        }
+                      """,
+                      "variables": {
+                          "owner": owner,
+                          "name": name,
+                          "number": int(dep),
+                      },
+                  }
+                  result = graphql(query)
+                  nodes = (((result.get("data") or {}).get("repository") or {}).get("issue") or {}).get("closedByPullRequestsReferences", {}).get("nodes", [])
+                  has_merged_pr = any(node.get("merged") is True or str(node.get("state", "")).upper() == "MERGED" for node in nodes)
+                  if not has_merged_pr:
+                      blocked.append({
+                          "number": dep,
+                          "title": data.get("title", ""),
+                          "state": data.get("state", "closed"),
+                          "reason": "no merged PR is linked to this dependency issue",
+                      })
 
           with open(output_path, "a", encoding="utf-8") as fh:
+              fh.write(f"dependency_mode={dependency_mode}\n")
               fh.write(f"has_dependencies={'true' if dependency_numbers else 'false'}\n")
               fh.write(f"should_run={'false' if blocked else 'true'}\n")
               if blocked:
@@ -103,13 +164,14 @@ jobs:
                       "This issue is waiting on dependency issues before OpenCode can run.",
                       "",
                       f"Current issue: #{issue_number}",
+                      f"Dependency mode: {dependency_mode}",
                       "",
-                      "Still open:",
+                      "Still blocked by:",
                   ]
                   for item in blocked:
-                      lines.append(f"- #{item['number']} {item['title']} ({item['state']})")
+                      lines.append(f"- #{item['number']} {item['title']} ({item['state']}; {item['reason']})")
                   lines.append("")
-                  lines.append("Close those dependency issues after their changes are merged, then comment `/opencode` again.")
+                  lines.append("Satisfy the dependency requirements, then comment `/opencode` again.")
                   message = "%0A".join(line.replace("%", "%25").replace("\n", "%0A").replace("\r", "%0D") for line in lines)
                   fh.write(f"blocked_message={message}\n")
           PY
@@ -131,7 +193,7 @@ jobs:
           use_github_token: true
           mentions: true
           share: true
-          prompt: ${{ github.event_name == 'issues' && 'Use the issue body as the task request. Respect the selected agent scope, the Allowed Scope section, and the Depends On section from the issue. Do not start implementation until listed dependency issues are complete. If the task is actionable, implement it in a new branch and open a pull request. If it is unclear or out of scope, explain why without making unrelated changes.' || 'Use the original issue body as the source of truth for the task. Treat the latest human comment only as a retrigger request, not as a replacement task description. Ignore prior bot comments and summaries. Respect the selected agent scope, Allowed Scope section, and any Depends On requirements from the issue. Do not start implementation until listed dependency issues are complete. If the task is actionable, implement it in a new branch and open a pull request.' }}
+          prompt: ${{ github.event_name == 'issues' && 'Use the issue body as the task request. Respect the selected agent scope, the Allowed Scope section, the Depends On section, and the Dependency Mode from the issue. Do not start implementation until listed dependency issues satisfy the selected dependency mode. If the task is actionable, implement it in a new branch and open a pull request. If it is unclear or out of scope, explain why without making unrelated changes.' || 'Use the original issue body as the source of truth for the task. Treat the latest human comment only as a retrigger request, not as a replacement task description. Ignore prior bot comments and summaries. Respect the selected agent scope, Allowed Scope section, Depends On requirements, and Dependency Mode from the issue. Do not start implementation until listed dependency issues satisfy the selected dependency mode. If the task is actionable, implement it in a new branch and open a pull request.' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}

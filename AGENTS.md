@@ -18,5 +18,7 @@
 - Use `[frontend]`, `[backend]`, or `[test]` title prefixes or matching labels to route work to the correct agent
 - Agents must obey the `Allowed Scope` section in the issue and avoid unrelated changes
 - Every implementation issue may declare upstream dependencies in a `Depends On` section using issue references such as `#12` and `#13`
-- Requirement analysis and issue decomposition should decide these dependencies before agents start working
-- Issues must not start until every listed dependency issue is completed and closed
+- Every implementation issue may also declare `Dependency Mode` as `closed` or `merged`
+- Requirement analysis and issue decomposition should decide both the dependencies and the dependency mode before agents start working
+- Use `closed` when downstream work can begin once the upstream issue is finished
+- Use `merged` when downstream work must wait for upstream code to land on the main branch

@@ -34,6 +34,17 @@ body:
         #13
     validations:
       required: false
+  - type: dropdown
+    id: dependency_mode
+    attributes:
+      label: Dependency Mode
+      description: Decide whether dependencies only need to be closed or must also have merged code before this task starts.
+      options:
+        - closed
+        - merged
+      default: 0
+    validations:
+      required: true
   - type: textarea
     id: acceptance
     attributes:
@@ -53,7 +64,7 @@ body:
         /opencode
 
         Implement the backend change described above.
-        Wait for every issue listed in Depends On to be completed and closed before starting.
+        Wait for every issue listed in Depends On to satisfy the selected Dependency Mode before starting.
         Stay within the Allowed Scope.
         If the task is blocked or outside backend scope, explain why and do not make unrelated changes.
     validations:
