@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="#0a0f1a"/>
+  <rect x="40" y="30" width="240" height="120" fill="#1a2a1a" rx="4"/>
+  <rect x="70" y="100" width="20" height="20" fill="#00ff41"/>
+  <rect x="70" y="70" width="20" height="20" fill="#00ff41"/>
+  <rect x="100" y="100" width="20" height="20" fill="#00ff41"/>
+  <rect x="130" y="70" width="20" height="20" fill="#00ff41"/>
+  <rect x="160" y="100" width="20" height="20" fill="#00ff41"/>
+  <rect x="190" y="70" width="20" height="20" fill="#00ff41"/>
+  <rect x="60" y="150" width="200" height="4" fill="#333355"/>
+  <rect x="100" y="160" width="120" height="4" fill="#333355"/>
+  <text x="160" y="20" font-family="monospace" font-size="8" fill="#00ff41" text-anchor="middle">8-BIT ADVENTURE</text>
+</svg>
