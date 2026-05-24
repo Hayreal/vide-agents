@@ -62,6 +62,7 @@ jobs:
           import json
           import os
           import re
+          import urllib.parse
           import urllib.request
 
           issue_body = os.environ.get("ISSUE_BODY", "")
@@ -82,6 +83,8 @@ jobs:
               normalized = mode_match.group(1).strip().lower()
               if "merged" in normalized:
                   dependency_mode = "merged"
+              elif "pr-ready" in normalized:
+                  dependency_mode = "pr-ready"
 
           def graphql(payload):
               req = urllib.request.Request(
@@ -97,10 +100,9 @@ jobs:
               with urllib.request.urlopen(req) as resp:
                   return json.load(resp)
 
-          blocked = []
-          for dep in dependency_numbers:
+          def rest(url):
               req = urllib.request.Request(
-                  f"https://api.github.com/repos/{repo}/issues/{dep}",
+                  url,
                   headers={
                       "Authorization": f"Bearer {token}",
                       "Accept": "application/vnd.github+json",
@@ -108,9 +110,26 @@ jobs:
                   },
               )
               with urllib.request.urlopen(req) as resp:
-                  data = json.load(resp)
+                  return json.load(resp)
+
+          def linked_prs(dep):
+              query = urllib.parse.quote(f'repo:{repo} is:pr "#{dep}"')
+              results = rest(f"https://api.github.com/search/issues?q={query}&per_page=20&sort=updated&order=desc")
+              pulls = []
+              for item in results.get("items", []):
+                  number = item.get("number")
+                  if not number:
+                      continue
+                  pull = rest(f"https://api.github.com/repos/{repo}/pulls/{number}")
+                  pulls.append(pull)
+              return pulls
+
+          blocked = []
+          open_pr_numbers = []
+          for dep in dependency_numbers:
+              data = rest(f"https://api.github.com/repos/{repo}/issues/{dep}")
               issue_closed = data.get("state", "").lower() == "closed"
-              if not issue_closed:
+              if dependency_mode == "closed" and not issue_closed:
                   blocked.append({
                       "number": dep,
                       "title": data.get("title", ""),
@@ -119,45 +138,35 @@ jobs:
                   })
                   continue
 
-              if dependency_mode == "merged":
-                  owner, name = repo.split("/", 1)
-                  query = {
-                      "query": """
-                        query($owner: String!, $name: String!, $number: Int!) {
-                          repository(owner: $owner, name: $name) {
-                            issue(number: $number) {
-                              closedByPullRequestsReferences(first: 20) {
-                                nodes {
-                                  number
-                                  merged
-                                  state
-                                  url
-                                }
-                              }
-                            }
-                          }
-                        }
-                      """,
-                      "variables": {
-                          "owner": owner,
-                          "name": name,
-                          "number": int(dep),
-                      },
-                  }
-                  result = graphql(query)
-                  nodes = (((result.get("data") or {}).get("repository") or {}).get("issue") or {}).get("closedByPullRequestsReferences", {}).get("nodes", [])
-                  has_merged_pr = any(node.get("merged") is True or str(node.get("state", "")).upper() == "MERGED" for node in nodes)
-                  if not has_merged_pr:
+              if dependency_mode in ("pr-ready", "merged"):
+                  pulls = linked_prs(dep)
+                  open_pulls = [pull for pull in pulls if pull.get("state") == "open"]
+                  merged_pulls = [pull for pull in pulls if pull.get("merged") is True]
+
+                  if dependency_mode == "pr-ready":
+                      if not open_pulls and not merged_pulls:
+                          blocked.append({
+                              "number": dep,
+                              "title": data.get("title", ""),
+                              "state": data.get("state", "open"),
+                              "reason": "no linked PR is ready for this dependency issue",
+                          })
+                          continue
+                      if open_pulls:
+                          open_pr_numbers.append(str(open_pulls[0].get("number")))
+
+                  if dependency_mode == "merged" and not merged_pulls:
                       blocked.append({
                           "number": dep,
                           "title": data.get("title", ""),
-                          "state": data.get("state", "closed"),
+                          "state": data.get("state", "open"),
                           "reason": "no merged PR is linked to this dependency issue",
                       })
 
           with open(output_path, "a", encoding="utf-8") as fh:
               fh.write(f"dependency_mode={dependency_mode}\n")
               fh.write(f"has_dependencies={'true' if dependency_numbers else 'false'}\n")
+              fh.write(f"open_pr_numbers={','.join(open_pr_numbers)}\n")
               fh.write(f"should_run={'false' if blocked else 'true'}\n")
               if blocked:
                   lines = [
@@ -184,6 +193,18 @@ jobs:
         run: |
           gh issue comment "${{ github.event.issue.number }}" --body "$(printf '%b' "${{ steps.deps.outputs.blocked_message }}")"
 
+      - name: Prepare integration branch from dependency PRs
+        if: steps.deps.outputs.should_run == 'true' && steps.deps.outputs.dependency_mode == 'pr-ready' && steps.deps.outputs.open_pr_numbers != ''
+        shell: bash
+        run: |
+          git checkout -B "integration/issue-${{ github.event.issue.number }}"
+          IFS=',' read -ra PRS <<< "${{ steps.deps.outputs.open_pr_numbers }}"
+          for pr in "${PRS[@]}"; do
+            [ -z "$pr" ] && continue
+            git fetch origin "pull/${pr}/head:dep-pr-${pr}"
+            git merge --no-edit "dep-pr-${pr}"
+          done
+
       - name: Run OpenCode
         if: steps.deps.outputs.should_run != 'false'
         uses: anomalyco/opencode/github@latest
@@ -193,7 +214,7 @@ jobs:
           use_github_token: true
           mentions: true
           share: true
-          prompt: ${{ github.event_name == 'issues' && 'Use the issue body as the task request. Respect the selected agent scope, the Allowed Scope section, the Depends On section, and the Dependency Mode from the issue. Do not start implementation until listed dependency issues satisfy the selected dependency mode. If the task is actionable, implement it in a new branch and open a pull request. If it is unclear or out of scope, explain why without making unrelated changes.' || 'Use the original issue body as the source of truth for the task. Treat the latest human comment only as a retrigger request, not as a replacement task description. Ignore prior bot comments and summaries. Respect the selected agent scope, Allowed Scope section, Depends On requirements, and Dependency Mode from the issue. Do not start implementation until listed dependency issues satisfy the selected dependency mode. If the task is actionable, implement it in a new branch and open a pull request.' }}
+          prompt: ${{ github.event_name == 'issues' && 'Use the issue body as the task request. Respect the selected agent scope, the Allowed Scope section, the Depends On section, and the Dependency Mode from the issue. Do not start implementation until listed dependency issues satisfy the selected dependency mode. If Dependency Mode is pr-ready, work on top of the prepared integration branch that already contains the dependency PR branches. If the task is actionable, implement it in a new branch and open a pull request. If it is unclear or out of scope, explain why without making unrelated changes.' || 'Use the original issue body as the source of truth for the task. Treat the latest human comment only as a retrigger request, not as a replacement task description. Ignore prior bot comments and summaries. Respect the selected agent scope, Allowed Scope section, Depends On requirements, and Dependency Mode from the issue. Do not start implementation until listed dependency issues satisfy the selected dependency mode. If Dependency Mode is pr-ready, work on top of the prepared integration branch that already contains the dependency PR branches. If the task is actionable, implement it in a new branch and open a pull request.' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}

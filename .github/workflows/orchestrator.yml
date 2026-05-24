@@ -4,7 +4,7 @@ on:
   issues:
     types: [closed]
   pull_request:
-    types: [closed]
+    types: [opened, synchronize, reopened, closed]
 
 permissions:
   contents: read
@@ -15,7 +15,7 @@ jobs:
   trigger-ready-tests:
     if: |
       (github.event_name == 'issues') ||
-      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+      (github.event_name == 'pull_request')
     runs-on: ubuntu-latest
     steps:
       - name: Auto-trigger ready test issues
@@ -28,6 +28,7 @@ jobs:
           import json
           import os
           import re
+          import urllib.parse
           import urllib.request
 
           token = os.environ["GITHUB_TOKEN"]
@@ -91,42 +92,39 @@ jobs:
 
               mode_match = re.search(r"^### Dependency Mode\s*(.*?)(?=^### |\Z)", body, re.S | re.M)
               dependency_mode = "closed"
-              if mode_match and "merged" in mode_match.group(1).strip().lower():
-                  dependency_mode = "merged"
+              if mode_match:
+                  normalized = mode_match.group(1).strip().lower()
+                  if "merged" in normalized:
+                      dependency_mode = "merged"
+                  elif "pr-ready" in normalized:
+                      dependency_mode = "pr-ready"
+
+              def linked_pulls(dep):
+                  query = urllib.parse.quote(f'repo:{repo} is:pr "#{dep}"')
+                  results = rest(f"https://api.github.com/search/issues?q={query}&per_page=20&sort=updated&order=desc")
+                  pulls = []
+                  for item in results.get("items", []):
+                      number = item.get("number")
+                      if not number:
+                          continue
+                      pulls.append(rest(f"https://api.github.com/repos/{repo}/pulls/{number}"))
+                  return pulls
 
               blocked = False
               for dep in dependency_numbers:
                   dep_issue = rest(f"https://api.github.com/repos/{repo}/issues/{dep}")
-                  if dep_issue.get("state", "").lower() != "closed":
+                  if dependency_mode == "closed" and dep_issue.get("state", "").lower() != "closed":
                       blocked = True
                       break
 
-                  if dependency_mode == "merged":
-                      query = {
-                          "query": """
-                            query($owner: String!, $name: String!, $number: Int!) {
-                              repository(owner: $owner, name: $name) {
-                                issue(number: $number) {
-                                  closedByPullRequestsReferences(first: 20) {
-                                    nodes {
-                                      merged
-                                      state
-                                    }
-                                  }
-                                }
-                              }
-                            }
-                          """,
-                          "variables": {
-                              "owner": owner,
-                              "name": name,
-                              "number": int(dep),
-                          },
-                      }
-                      result = graphql(query)
-                      nodes = (((result.get("data") or {}).get("repository") or {}).get("issue") or {}).get("closedByPullRequestsReferences", {}).get("nodes", [])
-                      has_merged_pr = any(node.get("merged") is True or str(node.get("state", "")).upper() == "MERGED" for node in nodes)
-                      if not has_merged_pr:
+                  if dependency_mode in ("pr-ready", "merged"):
+                      pulls = linked_pulls(dep)
+                      open_pulls = [pull for pull in pulls if pull.get("state") == "open"]
+                      merged_pulls = [pull for pull in pulls if pull.get("merged") is True]
+                      if dependency_mode == "pr-ready" and not open_pulls and not merged_pulls:
+                          blocked = True
+                          break
+                      if dependency_mode == "merged" and not merged_pulls:
                           blocked = True
                           break
 

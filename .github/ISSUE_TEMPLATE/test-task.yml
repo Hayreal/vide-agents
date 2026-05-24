@@ -38,9 +38,10 @@ body:
     id: dependency_mode
     attributes:
       label: Dependency Mode
-      description: Decide whether dependencies only need to be closed or must also have merged code before this task starts.
+      description: Decide whether dependencies must only be closed, have a ready PR branch, or already be merged before this task starts.
       options:
         - closed
+        - pr-ready
         - merged
       default: 1
     validations:
