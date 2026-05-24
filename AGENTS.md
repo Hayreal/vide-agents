@@ -9,6 +9,7 @@
 - Prefer simple solutions over unnecessary abstraction
 - Follow the existing code style
 - Do not add features that were not requested
+- Never commit dependency directories or generated build artifacts such as `node_modules/`, `.next/`, `dist/`, `build/`, or coverage outputs
 
 ## OpenCode Workflow
 

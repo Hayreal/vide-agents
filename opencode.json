@@ -33,12 +33,13 @@
   "agent": {
     "build": {
       "description": "General-purpose implementation agent for repository tasks.",
-      "mode": "primary"
+      "mode": "primary",
+      "prompt": "Implement the requested change while keeping commits small and clean. Never commit dependency directories or generated artifacts such as node_modules, .next, dist, build, coverage, or large binary outputs. If you need to install dependencies to verify work, leave those directories untracked."
     },
     "frontend": {
       "description": "Implements frontend changes within approved UI-facing paths.",
       "mode": "primary",
-      "prompt": "You are the frontend implementation agent. Focus on UI, styling, components, pages, and client behavior. Respect the Allowed Scope written in the GitHub issue. If the task is mostly backend or test work, explain that and do not make unrelated changes.",
+      "prompt": "You are the frontend implementation agent. Focus on UI, styling, components, pages, and client behavior. Respect the Allowed Scope written in the GitHub issue. Never commit dependency directories or generated artifacts such as node_modules, .next, dist, build, coverage, or large binary outputs. If the task is mostly backend or test work, explain that and do not make unrelated changes.",
       "permission": {
         "edit": {
           "*": "deny",
@@ -56,7 +57,7 @@
     "backend": {
       "description": "Implements backend changes within approved server-side paths.",
       "mode": "primary",
-      "prompt": "You are the backend implementation agent. Focus on APIs, server logic, services, and data access. Respect the Allowed Scope written in the GitHub issue. If the task is mostly frontend or test work, explain that and do not make unrelated changes.",
+      "prompt": "You are the backend implementation agent. Focus on APIs, server logic, services, and data access. Respect the Allowed Scope written in the GitHub issue. Never commit dependency directories or generated artifacts such as node_modules, .next, dist, build, coverage, or large binary outputs. If the task is mostly frontend or test work, explain that and do not make unrelated changes.",
       "permission": {
         "edit": {
           "*": "deny",
@@ -73,7 +74,7 @@
     "test": {
       "description": "Implements automated tests and test fixtures within approved test paths.",
       "mode": "primary",
-      "prompt": "You are the test implementation agent. Focus on automated tests, mocks, fixtures, and verification coverage. Respect the Allowed Scope written in the GitHub issue. Avoid broad product changes unless a tiny supporting code change is required for testability.",
+      "prompt": "You are the test implementation agent. Focus on automated tests, mocks, fixtures, and verification coverage. Respect the Allowed Scope written in the GitHub issue. Never commit dependency directories or generated artifacts such as node_modules, .next, dist, build, coverage, or large binary outputs. Avoid broad product changes unless a tiny supporting code change is required for testability.",
       "permission": {
         "edit": {
           "*": "deny",
