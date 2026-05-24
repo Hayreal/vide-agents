@@ -1,0 +1,209 @@
+/* ===== Pixel Art Theme ===== */
+
+:root {
+  /* Pixel palette */
+  --pixel-bg: #1a1a2e;
+  --pixel-bg-card: #16213e;
+  --pixel-bg-active: #0f3460;
+  --pixel-primary: #e94560;
+  --pixel-secondary: #533483;
+  --pixel-accent: #00d2ff;
+  --pixel-text: #e0e0e0;
+  --pixel-text-dim: #8a8aaa;
+  --pixel-text-bright: #ffffff;
+  --pixel-border: #3a3a5c;
+  --pixel-border-active: #e94560;
+  --pixel-success: #4ecca3;
+  --pixel-warning: #ffc107;
+
+  /* Pixel sizing */
+  --pixel-unit: 4px;
+  --pixel-border-width: 2px;
+
+  /* Layout */
+  --nav-height: 64px;
+  --content-padding: 16px;
+  --max-content-width: 480px;
+}
+
+/* Pixel font simulation - use system monospace for pixel feel */
+@font-face {
+  font-family: 'PixelFont';
+  src: local('Courier New'), local('monospace');
+  font-display: swap;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: 'Courier New', Courier, monospace;
+  background-color: var(--pixel-bg);
+  color: var(--pixel-text);
+  overflow-x: hidden;
+  overflow-y: auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
+}
+
+/* ===== Pixel Button ===== */
+.pixel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--pixel-text-bright);
+  background: var(--pixel-bg-card);
+  border: var(--pixel-border-width) solid var(--pixel-border);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.1s steps(2);
+  position: relative;
+  box-shadow: inset calc(var(--pixel-unit) * -1) calc(var(--pixel-unit) * -1) 0 0 rgba(0, 0, 0, 0.3);
+}
+
+.pixel-btn:hover {
+  background: var(--pixel-bg-active);
+  border-color: var(--pixel-primary);
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.pixel-btn:active,
+.pixel-btn.active {
+  background: var(--pixel-primary);
+  border-color: var(--pixel-primary);
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.pixel-btn--primary {
+  background: var(--pixel-primary);
+  border-color: var(--pixel-primary);
+}
+
+.pixel-btn--primary:hover {
+  background: var(--pixel-bg-active);
+}
+
+/* ===== Pixel Card ===== */
+.pixel-card {
+  background: var(--pixel-bg-card);
+  border: var(--pixel-border-width) solid var(--pixel-border);
+  padding: 20px;
+  position: relative;
+  box-shadow:
+    calc(var(--pixel-unit) * 1) calc(var(--pixel-unit) * 1) 0 0 rgba(0, 0, 0, 0.4);
+}
+
+.pixel-card__title {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--pixel-text-bright);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: var(--pixel-border-width) solid var(--pixel-border);
+}
+
+/* ===== Pixel Border ===== */
+.pixel-border {
+  border: var(--pixel-border-width) solid var(--pixel-border);
+  position: relative;
+}
+
+.pixel-border--active {
+  border-color: var(--pixel-border-active);
+  box-shadow: 0 0 8px rgba(233, 69, 96, 0.3);
+}
+
+/* ===== Pixel Active State ===== */
+.pixel-active {
+  background: var(--pixel-bg-active);
+  border-color: var(--pixel-primary);
+  color: var(--pixel-text-bright);
+}
+
+/* ===== Section Layout ===== */
+.section {
+  display: none;
+  width: 100%;
+  max-width: var(--max-content-width);
+  margin: 0 auto;
+  padding: var(--content-padding);
+  padding-bottom: calc(var(--nav-height) + var(--content-padding));
+  animation: pixelFadeIn 0.2s steps(3);
+}
+
+.section--active {
+  display: block;
+}
+
+@keyframes pixelFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section__header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.section__title {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--pixel-text-bright);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+}
+
+.section__subtitle {
+  font-size: 12px;
+  color: var(--pixel-text-dim);
+  letter-spacing: 1px;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--pixel-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--pixel-border);
+  border-radius: 0;
+}
+
+/* ===== Selection ===== */
+::selection {
+  background: var(--pixel-primary);
+  color: var(--pixel-text-bright);
+}
