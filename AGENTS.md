@@ -1,18 +1,20 @@
 # AGENTS.md
 
-## 项目概述
+## Project Overview
 
-[在这里描述你的项目]
+[Describe the project here]
 
-## 编码规范
+## Coding Rules
 
-- 优先简洁，避免不必要的抽象
-- 遵循已有代码风格
-- 不添加未要求的功能
+- Prefer simple solutions over unnecessary abstraction
+- Follow the existing code style
+- Do not add features that were not requested
 
-## OpenCode 工作流
+## OpenCode Workflow
 
-- 本项目通过 GitHub Actions + OpenCode + DeepSeek 实现自动化编码工作流
-- 在 Issue 或评论中使用 `/opencode` 或 `/oc` 可触发 OpenCode
-- 使用 `[frontend]`、`[backend]`、`[test]` 标题前缀或同名 label 路由到对应 agent
-- Agent 必须遵守 Issue 中的 `Allowed Scope`，避免越权修改
+- This repository uses GitHub Actions + OpenCode + DeepSeek for automated coding work
+- Use `/opencode` or `/oc` in an issue body or comment to trigger OpenCode
+- Use `[frontend]`, `[backend]`, or `[test]` title prefixes or matching labels to route work to the correct agent
+- Agents must obey the `Allowed Scope` section in the issue and avoid unrelated changes
+- Test issues may declare upstream dependencies in a `Depends On` section using issue references such as `#12` and `#13`
+- Test work should start only after the listed dependency issues are completed and closed
