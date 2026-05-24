@@ -1,0 +1,163 @@
+name: OpenCode Orchestrator
+
+on:
+  issues:
+    types: [closed]
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  trigger-ready-tests:
+    if: |
+      (github.event_name == 'issues') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-trigger ready test issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import urllib.request
+
+          token = os.environ["GITHUB_TOKEN"]
+          repo = os.environ["REPOSITORY"]
+
+          def rest(url):
+              req = urllib.request.Request(
+                  url,
+                  headers={
+                      "Authorization": f"Bearer {token}",
+                      "Accept": "application/vnd.github+json",
+                      "User-Agent": "github-actions"
+                  },
+              )
+              with urllib.request.urlopen(req) as resp:
+                  return json.load(resp)
+
+          def graphql(payload):
+              req = urllib.request.Request(
+                  "https://api.github.com/graphql",
+                  data=json.dumps(payload).encode("utf-8"),
+                  headers={
+                      "Authorization": f"Bearer {token}",
+                      "Accept": "application/vnd.github+json",
+                      "User-Agent": "github-actions"
+                  },
+                  method="POST",
+              )
+              with urllib.request.urlopen(req) as resp:
+                  return json.load(resp)
+
+          issues = rest(f"https://api.github.com/repos/{repo}/issues?state=open&labels=test&per_page=100")
+          owner, name = repo.split("/", 1)
+
+          for issue in issues:
+              body = issue.get("body") or ""
+              title = issue.get("title") or ""
+              if not title.startswith("[test]") and "test" not in [label.get("name") for label in issue.get("labels", [])]:
+                  continue
+
+              if "/opencode" not in body and "/oc" not in body:
+                  continue
+
+              auto_match = re.search(r"^### Auto Trigger On Ready\s*(.*?)(?=^### |\Z)", body, re.S | re.M)
+              auto_trigger = "no"
+              if auto_match:
+                  normalized = auto_match.group(1).strip().lower()
+                  if "yes" in normalized:
+                      auto_trigger = "yes"
+
+              if auto_trigger != "yes":
+                  continue
+
+              deps_match = re.search(r"^### Depends On\s*(.*?)(?=^### |\Z)", body, re.S | re.M)
+              dependency_numbers = []
+              if deps_match:
+                  dependency_numbers = re.findall(r"#(\d+)", deps_match.group(1))
+
+              if not dependency_numbers:
+                  continue
+
+              mode_match = re.search(r"^### Dependency Mode\s*(.*?)(?=^### |\Z)", body, re.S | re.M)
+              dependency_mode = "closed"
+              if mode_match and "merged" in mode_match.group(1).strip().lower():
+                  dependency_mode = "merged"
+
+              blocked = False
+              for dep in dependency_numbers:
+                  dep_issue = rest(f"https://api.github.com/repos/{repo}/issues/{dep}")
+                  if dep_issue.get("state", "").lower() != "closed":
+                      blocked = True
+                      break
+
+                  if dependency_mode == "merged":
+                      query = {
+                          "query": """
+                            query($owner: String!, $name: String!, $number: Int!) {
+                              repository(owner: $owner, name: $name) {
+                                issue(number: $number) {
+                                  closedByPullRequestsReferences(first: 20) {
+                                    nodes {
+                                      merged
+                                      state
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          """,
+                          "variables": {
+                              "owner": owner,
+                              "name": name,
+                              "number": int(dep),
+                          },
+                      }
+                      result = graphql(query)
+                      nodes = (((result.get("data") or {}).get("repository") or {}).get("issue") or {}).get("closedByPullRequestsReferences", {}).get("nodes", [])
+                      has_merged_pr = any(node.get("merged") is True or str(node.get("state", "")).upper() == "MERGED" for node in nodes)
+                      if not has_merged_pr:
+                          blocked = True
+                          break
+
+              if blocked:
+                  continue
+
+              comments = rest(f"https://api.github.com/repos/{repo}/issues/{issue['number']}/comments?per_page=100")
+              already_triggered = False
+              for comment in reversed(comments):
+                  body_text = comment.get("body") or ""
+                  user = comment.get("user") or {}
+                  if "/opencode" in body_text and user.get("type") == "Bot":
+                      already_triggered = True
+                      break
+                  if "/opencode" in body_text and user.get("type") != "Bot":
+                      break
+
+              if already_triggered:
+                  continue
+
+              payload = json.dumps({"body": "/opencode"}).encode("utf-8")
+              req = urllib.request.Request(
+                  f"https://api.github.com/repos/{repo}/issues/{issue['number']}/comments",
+                  data=payload,
+                  headers={
+                      "Authorization": f"Bearer {token}",
+                      "Accept": "application/vnd.github+json",
+                      "User-Agent": "github-actions"
+                  },
+                  method="POST",
+              )
+              with urllib.request.urlopen(req):
+                  pass
+          PY

@@ -22,3 +22,7 @@
 - Requirement analysis and issue decomposition should decide both the dependencies and the dependency mode before agents start working
 - Use `closed` when downstream work can begin once the upstream issue is finished
 - Use `merged` when downstream work must wait for upstream code to land on the main branch
+- Test issues must define a narrow verification target that matches only the implemented scope of the linked dependency issues
+- Test agents must not validate future features or behavior outside the current issue boundary
+- Test issues may declare `Auto Trigger On Ready` as `yes` or `no`
+- Use automatic triggering only when the test scope is already clearly aligned to the implemented dependency issues

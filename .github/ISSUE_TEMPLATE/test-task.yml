@@ -45,11 +45,22 @@ body:
       default: 1
     validations:
       required: true
+  - type: dropdown
+    id: auto_trigger_on_ready
+    attributes:
+      label: Auto Trigger On Ready
+      description: Decide whether the workflow should automatically start this test issue once its dependencies are satisfied.
+      options:
+        - yes
+        - no
+      default: 0
+    validations:
+      required: true
   - type: textarea
     id: acceptance
     attributes:
       label: Acceptance Criteria
-      description: Define the required coverage or behavior.
+      description: Define only the implemented behavior this test task must verify. Do not include future or out-of-scope behavior.
       placeholder: |
         - Includes a runnable automated test
         - Covers the expected output
@@ -65,6 +76,9 @@ body:
 
         Implement the test change described above.
         Wait for every issue listed in Depends On to satisfy the selected Dependency Mode before starting.
+        If Auto Trigger On Ready is yes, begin automatically once dependencies are ready.
+        Test only the functionality that is explicitly in scope for this issue and its implemented dependencies.
+        Do not test future, unrelated, or not-yet-implemented behavior.
         Stay within the Allowed Scope.
         If the task is blocked or outside test scope, explain why and do not make unrelated changes.
     validations:
